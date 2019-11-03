@@ -59,13 +59,13 @@ var Juego = {
   // Los enemigos se agregaran en este arreglo.
   enemigos: [
     new ZombieCaminante("imagenes/zombie1.png",50, 100, 10, 10, 1, {desdeX: 50, hastaX:200, desdeY:10, hastaY:900}),
-    new ZombieCaminante("imagenes/zombie2.png",130, 400, 10, 10, 2, {desdeX: 50, hastaX:600, desdeY:10, hastaY:900}),
-    new ZombieCaminante("imagenes/zombie3.png",830, 470, 10, 10, 3, {desdeX: 750, hastaX:880, desdeY:0, hastaY:900}),
+    new ZombieCaminante("imagenes/zombie2.png",130, 400, 10, 10, 5, {desdeX: 50, hastaX:600, desdeY:10, hastaY:900}),
+    new ZombieCaminante("imagenes/zombie3.png",830, 470, 10, 10, 5, {desdeX: 750, hastaX:880, desdeY:0, hastaY:900}),
     new ZombieCaminante("imagenes/zombie4.png",780, 100, 10, 10, 2, {desdeX:240, hastaX:880, desdeY:10, hastaY:900}),
     new ZombieCaminante("imagenes/zombie1.png",470, 250, 10, 10, 1, {desdeX: 50, hastaX:940, desdeY:10, hastaY:900}),
-    new ZombieConductor("imagenes/tren_vertical.png",644, 0, 30, 90, 5, 8, "vertical", 961, 577),
-    new ZombieConductor("imagenes/tren_vertical.png",678, 0, 30, 90, 4, 6, "vertical", 961, 577),
-    new ZombieConductor("imagenes/tren_horizontal.png",400, 322, 90, 30, 4, 10, "horizontal", 961, 577),
+    new ZombieConductor("imagenes/tren_vertical.png",644, 0, 30, 90, 5, 8, "vertical", 961, 577, true),
+    new ZombieConductor("imagenes/tren_vertical.png",678, 0, 30, 90, 4, 6, "vertical", 961, 577, true),
+    new ZombieConductor("imagenes/tren_horizontal.png",400, 322, 90, 30, 4, 10, "horizontal", 961, 577, true),
   ]
 
 }
@@ -106,11 +106,41 @@ Juego.obstaculos = function() {
 Juego.comenzar = function() {
   // Inicializar el canvas del juego
   Dibujante.inicializarCanvas(this.anchoCanvas, this.altoCanvas);
-  /* El bucle principal del juego se llamara continuamente para actualizar
-  los movimientos y el pintado de la pantalla. Sera el encargado de calcular los
-  ataques, colisiones, etc*/
-  this.buclePrincipal();
+  
+  var reset = Juego.getResetParamenter(window.location.search)
+  if(reset) {
+      /* El bucle principal del juego se llamara continuamente para actualizar
+    los movimientos y el pintado de la pantalla. Sera el encargado de calcular los
+    ataques, colisiones, etc*/
+    this.buclePrincipal();
+  } else {
+    this.pantallaInicio();
+  }
 };
+
+Juego.getResetParamenter = function(params) {
+  console.log(params);
+  if(params == undefined) {
+    return false;
+  }
+
+  if( params.includes("status=reset")){
+    return true;
+  }
+  console.log("test1")
+  return false;
+}
+
+Juego.reiniciar = function(){
+  window.location.href += '?status=reset';
+  window.location.load();
+}
+
+Juego.jugar = function() {
+  
+  this.buclePrincipal();
+  document.getElementById('iniciar').style.visibility = 'hidden';
+}
 
 Juego.buclePrincipal = function() {
 
@@ -167,6 +197,7 @@ Juego.capturarMovimiento = function(tecla) {
   }
 };
 
+
 Juego.dibujar = function() {
   // Borrar el fotograma actual
   Dibujante.borrarAreaDeJuego();
@@ -175,6 +206,9 @@ Juego.dibujar = function() {
   /* Aca hay que agregar la logica para poder dibujar al jugador principal
   utilizando al dibujante y los metodos que nos brinda.
   "Dibujante dibuja al jugador" */
+
+  if(this.terminoJuego() || this.ganoJuego()) return; // se finaliza la ejecución
+
   Dibujante.dibujarEntidad(this.jugador);
   // Se recorren los obstaculos de la carretera pintandolos
   this.obstaculosCarretera.forEach(function(obstaculo) {
@@ -230,12 +264,11 @@ Juego.calcularAtaques = function() {
   this.enemigos.forEach(function(enemigo) {
     if (this.intersecan(enemigo, this.jugador, this.jugador.x, this.jugador.y)) {
         enemigo.comenzarAtaque(this.jugador);
-      /* Si el enemigo colisiona debe empezar su ataque
-      COMPLETAR */
+      //Si el enemigo colisiona debe empezar su ataque
+    
     } else {
       enemigo.dejarDeAtacar();
-      /* Sino, debe dejar de atacar
-      COMPLETAR */
+      //Sino, debe dejar de ataca
     }
   }, this);
 };
@@ -275,7 +308,7 @@ Juego.dibujarFondo = function() {
   // Si se termino el juego hay que mostrar el mensaje de game over de fondo
   if (this.terminoJuego()) {
     Dibujante.dibujarImagen('imagenes/mensaje_gameover.png', 0, 5, this.anchoCanvas, this.altoCanvas);
-    document.getElementById('reiniciar').style.visibility = 'visible';
+    document.getElementById('reiniciar').style.visibility ='visible';
   }
 
   // Si se gano el juego hay que mostrar el mensaje de ganoJuego de fondo
@@ -284,7 +317,9 @@ Juego.dibujarFondo = function() {
     document.getElementById('reiniciar').style.visibility = 'visible';
   } else {
     Dibujante.dibujarImagen('imagenes/mapa.png', 0, 5, this.anchoCanvas, this.altoCanvas);
+
   }
+
 };
 
 Juego.terminoJuego = function() {
@@ -296,7 +331,16 @@ Juego.ganoJuego = function() {
   return (this.jugador.y + this.jugador.alto) > 530;
 };
 
+Juego.pantallaInicio = function() {
+  
+  Dibujante.dibujarImagen('imagenes/Splash.png', 190, 113, 500, 203);
+  document.getElementById('iniciar').style.visibility = 'visible';
+}
+
+
+
 Juego.iniciarRecursos();
+
 
 // Activa las lecturas del teclado al presionar teclas
 // Documentacion: https://developer.mozilla.org/es/docs/Web/API/EventTarget/addEventListener
